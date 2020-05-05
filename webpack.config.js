@@ -4,9 +4,10 @@ const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
+    context: path.resolve(__dirname, 'src'), // относительно какой папки мы работаем
     mode: 'development',
     entry: {
-        filename: './index.js'
+        filename: './enter.js'
     },
     output: {
         filename: '[contenthash].js',
@@ -23,8 +24,8 @@ module.exports = {
         new CleanWebpackPlugin(),
         new CopyWebpackPlugin([
             {
-                from: path.resolve(__dirname, 'textures'),
-                to: path.resolve(__dirname, 'build/textures')
+                from: path.resolve(__dirname, 'src/assets'),
+                to: path.resolve(__dirname, 'build/assets')
             }
         ])
     ],

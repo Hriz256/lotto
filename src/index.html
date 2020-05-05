@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #fps {
+            position: absolute;
+            background-color: black;
+            border: 2px solid red;
+            text-align: center;
+            font-size: 16px;
+            color: white;
+            top: 15px;
+            right: 10px;
+            width: 60px;
+            height: 20px;
+        }
+
+        #start {
+            position: absolute;
+            line-height: 30px;
+            vertical-align: middle;
+            text-align: center;
+            font-size: 16px;
+            top: 15px;
+            left: 15px;
+            width: 80px;
+            height: 30px;
+            color: white;
+            background: #5e7d00;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<!--<div id="fps">0</div>-->
+<span id="start">Старт</span>
+<canvas id="renderCanvas"></canvas>
+</body>
+</html>
+
