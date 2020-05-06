@@ -18,6 +18,16 @@ const materials = {
         return this[texture];
     },
 
+    createGlass() {
+        this.glass = new BABYLON.PBRMaterial("plastic", this.scene);
+        // plastic.reflectionTexture = hdrTexture;
+        this.glass.microSurface = 0.96;
+        this.glass.backFaceCulling = false;
+        this.glass.alpha = 0.2;
+        this.glass.albedoColor = new BABYLON.Color3(0.206, 0.94, 1);
+        this.glass.reflectivityColor = new BABYLON.Color3(0.003, 0.003, 0.003);
+    },
+
     createText({width, height}) {
         const textGround = new BABYLON.DynamicTexture("textSurface", {width, height}, this.scene);
         textGround.hasAlpha = true;

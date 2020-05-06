@@ -1,6 +1,7 @@
 import * as BABYLON from 'babylonjs';
 import 'babylonjs-loaders';
 import * as Ammo from "ammo.js";
+// import * as Cannon from "cannon";
 import {createRoom} from './playground';
 import {materials, mesh} from "./materials";
 
@@ -20,12 +21,15 @@ const createScene = () => {
     camera.attachControl(canvas, true);
 
     scene.enablePhysics(new BABYLON.Vector3(0, -70, 0), new BABYLON.AmmoJSPlugin(null, Ammo));
+    // scene.enablePhysics(new BABYLON.Vector3(0, -70, 0), new BABYLON.CannonJSPlugin(true, 100, Cannon));
+
 
     mesh.scene = scene;
     materials.scene = scene;
 
     materials.createColor('black', '#000');
     materials.createColor('yellow', '#ffed45');
+    materials.createGlass();
 
     createRoom(scene);
 
