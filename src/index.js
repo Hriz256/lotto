@@ -39,7 +39,7 @@ class Playground {
 
         const light = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(0, 20, 20), scene);
 
-        scene.enablePhysics(new BABYLON.Vector3(0, -70, 0), new BABYLON.AmmoJSPlugin(null, Ammo));
+        scene.enablePhysics(new BABYLON.Vector3(0, -10, 0), new BABYLON.AmmoJSPlugin(null, Ammo));
 
         return scene;
     }

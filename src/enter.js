@@ -19,6 +19,8 @@ const createScene = () => {
     const camera = new BABYLON.ArcRotateCamera("Camera", Math.PI / -2, Math.PI / 2, 30, new BABYLON.Vector3(0, 0, 15), scene);
     camera.attachControl(canvas, true);
 
+    scene.enablePhysics(new BABYLON.Vector3(0, -70, 0), new BABYLON.AmmoJSPlugin(null, Ammo));
+
     mesh.scene = scene;
     materials.scene = scene;
 
@@ -26,8 +28,6 @@ const createScene = () => {
     materials.createColor('yellow', '#ffed45');
 
     createRoom(scene);
-
-    scene.enablePhysics(new BABYLON.Vector3(0, -70, 0), new BABYLON.AmmoJSPlugin(null, Ammo));
 
     return scene;
 };
@@ -37,6 +37,10 @@ scene = createScene();
 
 if (!engine) throw 'engine should not be null.';
 
-engine.runRenderLoop(() => scene && scene.render());
+engine.runRenderLoop(() => {
+    scene && scene.render();
+    document.getElementById('fps').innerHTML = engine.getFps().toFixed() + " fps";
+});
+
 engine.loadingUIBackgroundColor = "Purple";
 window.addEventListener("resize", () => engine.resize());
