@@ -21,8 +21,6 @@ const createScene = () => {
     camera.attachControl(canvas, true);
 
     scene.enablePhysics(new BABYLON.Vector3(0, -70, 0), new BABYLON.AmmoJSPlugin(null, Ammo));
-    // scene.enablePhysics(new BABYLON.Vector3(0, -70, 0), new BABYLON.CannonJSPlugin(true, 100, Cannon));
-
 
     mesh.scene = scene;
     materials.scene = scene;

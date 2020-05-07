@@ -1,13 +1,18 @@
 import * as BABYLON from "babylonjs";
 import {materials, mesh} from "./materials";
-import {balls, createBalls} from "./balls";
-
+import {balls, createBalls, showWinnings} from "./balls";
 
 let allowDestroyBall = false;
-let play = false;
 
+const timeout = (ms) => {
+    return new Promise(resolve => {
+        setTimeout(() => resolve(), ms)
+    })
+};
 
 const createRotor = () => {
+    let previousRotorSpeed = 0;
+    let rotorOne = null;
     const holder = mesh.createSphere({
         diameter: 0.7,
         position: {x: -0.25, y: -0.65, z: 16.7},
@@ -15,7 +20,6 @@ const createRotor = () => {
     });
 
     // holder.isVisible = false;
-
     holder.setPhysics({});
 
     const joint1 = new BABYLON.HingeJoint({
@@ -28,11 +32,102 @@ const createRotor = () => {
 
     return {
         holderAddJoint(rotor) {
+            rotorOne = rotor;
             holder.physicsImpostor.addJoint(rotor.physicsImpostor, joint1);
         },
 
-        runRotor(forceFactor) {
-            joint1.setMotor(forceFactor);
+        async runRotor(forceFactor) {
+            let speed = previousRotorSpeed;
+            previousRotorSpeed = forceFactor;
+            rotorOne.physicsImpostor.wakeUp();
+
+            while (speed !== forceFactor) {
+                forceFactor ? speed++ : speed--;
+                joint1.setMotor(speed);
+
+                await timeout(300);
+            }
+
+            return true;
+        }
+    }
+};
+
+const createBallCollector = () => {
+    const walls = {
+        back: {
+            position: {x: 2, y: -7, z: 18},
+        },
+        front: {
+            position: {x: 2, y: -7, z: 15},
+        },
+        right: {
+            position: {x: 5.8, y: -7, z: 17},
+            rotation: {x: 0, y: Math.PI / 2, z: 0}
+        },
+        bottom: {
+            position: {x: 2, y: -8.5, z: 16},
+            rotation: {x: 0, y: 0, z: -Math.PI / 34}
+        },
+        left: {
+            position: {x: -0.5, y: -9.25, z: 16},
+            rotation: {x: 0, y: 0, z: -Math.PI / 3}
+        }
+    };
+
+    Array.from(Object.values(walls), item => {
+        const wall = mesh.createBox({
+            size: {x: 6, y: 3, z: 2},
+            position: item.position,
+            rotation: item.rotation,
+            material: materials['yellow']
+        });
+
+        wall.setPhysics({impostor: 'BoxImpostor'});
+        wall.isVisible = false;
+    });
+};
+
+const createRollerWalls = () => {
+    let alpha = 2.06;
+
+    const walls = Array.from([9.8, 23.4], z => {
+        const wall = mesh.createBox({
+            size: {x: 12, y: 12, z: 12},
+            position: {x: 0, y: -1, z},
+            material: materials['yellow']
+        });
+
+        wall.isVisible = false;
+
+        return wall;
+    });
+
+    const spheresWall = Array.from({length: 125}, () => {
+        const sphere = mesh.createSphere({
+            diameter: 2.5,
+            position: {x: -0.22 + (6.45 * Math.cos(alpha)), y: -0.6 + (6.45 * Math.sin(alpha)), z: 16.3},
+            material: materials['yellow'],
+        });
+
+        sphere.setPhysics({restitution: 1, friction: 0});
+        sphere.isVisible = false;
+        alpha += 0.05;
+
+        return sphere;
+    });
+
+    return {
+        setWallPhysics() {
+            Array.from(walls, item => item.setPhysics({impostor: 'BoxImpostor', restitution: 1, friction: 1}));
+        },
+
+        toggleSpheresPhysic(physic) {
+            Array.from(spheresWall, (item, index) => {
+                if (index > 104) {
+                    physic ? item.setPhysics({restitution: 1, friction: 0}) : item.physicsImpostor.dispose();
+                }
+            });
         }
     }
 };
@@ -60,7 +155,6 @@ const createRoller = (scene, rotor) => {
                 rotor.holderAddJoint(item);
             } else {
                 item.position = new BABYLON.Vector3(-3, -10.8, 18);
-                // item.isVisible = false
                 item.parent = roller
             }
         });
@@ -83,91 +177,52 @@ const createRoller = (scene, rotor) => {
     assetsManager.load();
 };
 
-let spheresWall = [];
+const allowPlay = () => {
+    balls.allowStart = !balls.allowStart;
 
-const toggleSpheresPhysic = (physic) => {
-    Array.from(spheresWall, (item, index) => {
-        if (index > 34) {
-            physic ? item.setPhysics({restitution: 0, friction: 0}) : item.physicsImpostor.dispose();
-        }
-    });
+    document.getElementById('start').textContent = balls.allowStart ? 'Стоп' : 'Старт';
 };
 
-const startTheGame = () => {
-    // setTimeout(() => {
-    Array.from(balls[`${balls.currentIndex}`], item => item.physicsImpostor.setMass(10));
-    // }, 3000);
+const endTheGame = async (rotor, walls) => {
+    await rotor.runRotor(0);
+    walls.toggleSpheresPhysic(false);
+    await timeout(5000);
+
+    balls.currentIndex++;
+
+    if (balls.currentIndex === 4) {
+        document.getElementById('start').textContent = 'Старт';
+        createBalls();
+    }
 };
 
-const run = (rotor) => {
-    toggleSpheresPhysic(true);
+const run = async (rotor, walls) => {
+    walls.toggleSpheresPhysic(true);
 
-    setTimeout(() => {
-        rotor.runRotor(10);
+    await timeout(2000);
+    await rotor.runRotor(10);
 
-        // setTimeout(() => showWinnings(), 1000);
-    }, 3000);
+    showWinnings()
 };
 
-// const wheelMove = (isRun) => {
-//     if (isRun) {
-//         this.wheel.position = new BABYLON.Vector3(0.05, -1.5, 0);
-//         this.wheel.physicsImpostor = new BABYLON.PhysicsImpostor(this.wheel, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 20});
-//         this.holder.physicsImpostor = new BABYLON.PhysicsImpostor(this.holder, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0});
-//         this.holder.physicsImpostor.addJoint(this.wheel.physicsImpostor, this.joint1);
-//         this.joint1.setMotor(10)
-//     } else {
-//         this.wheel.dispose();
-//         this.holder.dispose();
-//         this.createWheel();
-//     }
-// }
-
-const createRollerWalls = () => {
-    let alpha = 2.06;
-
-    const wall1 = mesh.createBox({
-        size: {x: 12, y: 12, z: 12},
-        position: {x: 0, y: -1, z: 9.8},
-        material: materials['yellow']
-    });
-
-    const wall2 = mesh.createBox({
-        size: {x: 12, y: 12, z: 12},
-        position: {x: 0, y: -1, z: 23.4},
-        material: materials['yellow']
-    });
-
-    Array.from([wall1, wall2], item => {
-        item.isVisible = false;
-        item.setPhysics({impostor: 'BoxImpostor', restitution: 1, friction: 1});
-    });
-
-    spheresWall = Array.from({length: 45}, () => {
-        const sphere = mesh.createSphere({
-            diameter: 2.5,
-            position: {x: -0.22 + (6.45 * Math.cos(alpha)), y: -0.6 + (6.45 * Math.sin(alpha)), z: 16.3},
-            material: materials['yellow'],
-        });
-
-        sphere.setPhysics({restitution: 0, friction: 0});
-        // sphere.isVisible = false;
-        alpha += 0.15;
-
-        return sphere;
-    });
-
-    toggleSpheresPhysic(false);
+const startTheGame = (walls) => {
+    walls.setWallPhysics();
+    balls.setMass(10);
 };
-
 
 const createRoom = (scene) => {
     let start = false;
-    const rotor = createRotor();
+    let allowCompleteEndFunction = false;
 
+    const rotor = createRotor();
     createRoller(scene, rotor);
 
-    Array.from({length: 4}, (i, index) => createBalls(0, index));
+    createBalls();
+
+    const walls = createRollerWalls();
+    walls.toggleSpheresPhysic(false);
+
+    createBallCollector();
 
     const bg = mesh.createPlane({
         width: 85,
@@ -177,119 +232,25 @@ const createRoom = (scene) => {
     });
 
     scene.registerBeforeRender(() => {
-        const allow = balls[`${balls.currentIndex}`].every(i => i.position.y < 1);
-
-        if (allow && !start && play) {
-            run(rotor);
-            start = true;
+        if (balls.getBallPosY() && start) {
+            run(rotor, walls);
+            start = false;
         }
 
-        // if (allowDestroyBall) {
-        //     removeBall();
-        //     allowDestroyBall = false;
-        // }
-    });
+        if (balls.allowStart) {
+            startTheGame(walls);
+            start = true;
+            allowCompleteEndFunction = true;
+            balls.allowStart = false;
+        }
 
-    createRollerWalls();
+        if (!balls[`${balls.currentIndex}`].length && allowCompleteEndFunction) {
+            endTheGame(rotor, walls);
+            allowCompleteEndFunction = false;
+        }
+    });
 };
 
-
-class Lotto {
-
-
-    main() {
-        const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("textures/environment.dds", scene);
-
-        const plastic = new BABYLON.PBRMaterial("plastic", scene);
-        // plastic.reflectionTexture = hdrTexture;
-        plastic.microSurface = 0.96;
-        plastic.backFaceCulling = false;
-        plastic.alpha = 0.2;
-        plastic.albedoColor = new BABYLON.Color3(0.206, 0.94, 1);
-        plastic.reflectivityColor = new BABYLON.Color3(0.003, 0.003, 0.003);
-    }
-
-    showWinBall(number) {
-        const ballsVectorPos = [
-            new BABYLON.Vector3(-4.9, -9.8, 0),
-            new BABYLON.Vector3(-1.65, -9.7, 0),
-            new BABYLON.Vector3(1.65, -9.7, 0),
-            new BABYLON.Vector3(4.9, -9.8, 0)
-        ];
-
-        const winBallImg = this.createMaterial(`balls/Ball_${number}`, 1);
-        winBallImg.diffuseTexture.hasAlpha = true;
-
-        const winBall = BABYLON.MeshBuilder.CreatePlane("body", {width: 2.4, height: 2.2}, scene, true);
-        winBall.position = ballsVectorPos[this.balls.winBallsImg.length];
-        winBall.material = winBallImg;
-
-        this.balls.winBallsImg.push(winBallImg);
-    }
-
-    showWinnings() {
-        const number = random(0, 9);
-        const ball = this.balls[`${this.currentIndex}`].find(item => item.material.name === `${number}`);
-
-        this.showWinBall(number);
-        ball.dispose();
-
-        const winBall = this.createSphere({
-            x: -0.4,
-            y: -4.5,
-            z: 3.5,
-            material: this.createMaterial(`${number}`),
-            diameter: 0.55,
-            mass: 10
-        });
-        this.balls.winBalls.push(winBall);
-
-        this.interval = setInterval(() => {
-            if (!this.balls[`${this.currentIndex}`].length) {
-                clearInterval(this.interval);
-                this.endTheGame();
-
-                return;
-            }
-
-            this.allowDestroyBall = true;
-        }, 500);
-    }
-
-    removeBall() {
-        const ballIndex = this.balls[`${this.currentIndex}`].findIndex(ball =>
-            ball.position.y < -3 &&
-            ball.position.y > -4.5 &&
-            ball.position.x > -2 &&
-            ball.position.x < 2
-        );
-
-        if (ballIndex !== -1) {
-            this.balls[`${this.currentIndex}`][ballIndex].dispose();
-            this.balls[`${this.currentIndex}`].splice(ballIndex, 1);
-        }
-    }
-
-    endTheGame() {
-        this.wheelMove(false);
-        this.toggleSpheresPhysic(false);
-        this.currentIndex++;
-        start = false;
-
-        play && lotto.startTheGame();
-    }
-}
-
-
-document.getElementById('start').addEventListener('click', e => {
-    play = !play;
-
-    if (play) {
-        startTheGame();
-        e.target.textContent = 'Стоп';
-    } else {
-        e.target.textContent = 'Старт';
-    }
-});
+document.getElementById('start').addEventListener('click', () => allowPlay());
 
 export {createRoom};

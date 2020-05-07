@@ -1,5 +1,7 @@
 import * as BABYLON from 'babylonjs';
 
+const random = (min, max) => Math.floor( min + Math.random() * (max + 1 - min));
+
 const materials = {
     scene: null,
     createColor(color, hex) {
@@ -116,4 +118,4 @@ const drawText = ({x, y, z, text, size, multiplier = 3, height, inCenterX = fals
     return text2.textGround;
 };
 
-export {materials, mesh, drawText};
+export {materials, mesh, drawText, random};
