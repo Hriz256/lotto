@@ -11,5 +11,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="libktx" level="application" />
     <orderEntry type="library" name="ammo" level="application" />
+    <orderEntry type="library" name="babylon" level="application" />
   </component>
 </module>

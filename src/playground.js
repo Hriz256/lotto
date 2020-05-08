@@ -1,8 +1,6 @@
-import * as BABYLON from "babylonjs";
 import {materials, mesh} from "./materials";
 import {balls, createBalls, showWinnings} from "./balls";
 
-let allowDestroyBall = false;
 
 const timeout = (ms) => {
     return new Promise(resolve => {
@@ -41,14 +39,32 @@ const createRotor = () => {
             previousRotorSpeed = forceFactor;
             rotorOne.physicsImpostor.wakeUp();
 
-            while (speed !== forceFactor) {
-                forceFactor ? speed++ : speed--;
-                joint1.setMotor(speed);
+            const stopRotor = () => {
+                if (forceFactor) {
+                    console.log(speed, '+')
+                    speed++
+                } else {
+                    if (speed > 5) {
+                        console.log(speed, '+-')
+                        speed--;
+                    } else {
+                        speed *= 1 - rotorOne.rotationQuaternion.z;
+                    }
+                }
 
+                joint1.setMotor(speed);
+            };
+
+            while (speed !== forceFactor) {
+                stopRotor();
                 await timeout(300);
             }
 
             return true;
+        },
+
+        getRotor() {
+            return rotorOne;
         }
     }
 };
@@ -83,7 +99,7 @@ const createBallCollector = () => {
             material: materials['yellow']
         });
 
-        wall.setPhysics({impostor: 'BoxImpostor'});
+        wall.setPhysics({impostor: 'BoxImpostor', group: 1, mask: 1});
         wall.isVisible = false;
     });
 };
@@ -110,7 +126,7 @@ const createRollerWalls = () => {
             material: materials['yellow'],
         });
 
-        sphere.setPhysics({restitution: 1, friction: 0});
+        sphere.setPhysics({restitution: 1, friction: 0, group: 2, mask: 2});
         sphere.isVisible = false;
         alpha += 0.05;
 
@@ -119,13 +135,24 @@ const createRollerWalls = () => {
 
     return {
         setWallPhysics() {
-            Array.from(walls, item => item.setPhysics({impostor: 'BoxImpostor', restitution: 1, friction: 1}));
+            Array.from(walls, item => item.setPhysics({
+                impostor: 'BoxImpostor',
+                restitution: 1,
+                friction: 1,
+                group: 2,
+                mask: 2
+            }));
         },
 
         toggleSpheresPhysic(physic) {
             Array.from(spheresWall, (item, index) => {
                 if (index > 104) {
-                    physic ? item.setPhysics({restitution: 1, friction: 0}) : item.physicsImpostor.dispose();
+                    physic ? item.setPhysics({
+                        restitution: 1,
+                        friction: 0,
+                        group: 2,
+                        mask: 2
+                    }) : item.physicsImpostor.dispose();
                 }
             });
         }
@@ -137,8 +164,6 @@ const createRoller = (scene, rotor) => {
     const meshTask = assetsManager.addMeshTask('Roller', "", 'assets/roller/', 'roller.obj');
 
     meshTask.onSuccess = ({loadedMeshes}) => {
-        const roller = new BABYLON.Mesh('roller', scene);
-
         Array.from(loadedMeshes, (item, index) => {
             item.rotation.y = Math.PI;
             item.scaling = new BABYLON.Vector3(0.137, 0.137, 0.137);
@@ -146,16 +171,18 @@ const createRoller = (scene, rotor) => {
             if (index === 3) {
                 item.scaling = new BABYLON.Vector3(0.139, 0.139, 0.139);
                 item.position = new BABYLON.Vector3(-2.8, -10.3, 1.25);
+
+                // следующи 2 строки нужны для того, чтобы сохранить изменения позиции
+
                 item.computeWorldMatrix();
                 item.bakeCurrentTransformIntoVertices(true);
 
                 item.setPhysics = mesh.setPhysics;
-                item.setPhysics({impostor: 'MeshImpostor', mass: 20, friction: 0});
+                item.setPhysics({impostor: 'MeshImpostor', mass: 20, friction: 0, group: 2, mask: 2});
 
                 rotor.holderAddJoint(item);
             } else {
                 item.position = new BABYLON.Vector3(-3, -10.8, 18);
-                item.parent = roller
             }
         });
 
@@ -197,10 +224,12 @@ const endTheGame = async (rotor, walls) => {
 };
 
 const run = async (rotor, walls) => {
-    walls.toggleSpheresPhysic(true);
+    walls.toggleSpheresPhysic(true); // Включаем физику у окружающих сфер
 
-    await timeout(2000);
+    // await timeout(2000);
     await rotor.runRotor(10);
+
+    await endTheGame(rotor, walls);
 
     showWinnings()
 };
@@ -220,9 +249,11 @@ const createRoom = (scene) => {
     createBalls();
 
     const walls = createRollerWalls();
+
+    // После создания стены из сфер делаем некоторые из них "нефизичными", чтобы они не мешали падению шариков
     walls.toggleSpheresPhysic(false);
 
-    createBallCollector();
+    createBallCollector(); // стены вокруг трубы, в которую падают выигрышные шарики
 
     const bg = mesh.createPlane({
         width: 85,
@@ -232,13 +263,18 @@ const createRoom = (scene) => {
     });
 
     scene.registerBeforeRender(() => {
-        if (balls.getBallPosY() && start) {
+        const bool = balls.isAllBallsFell(); // если все шары упали
+
+        if (bool && start) {
             run(rotor, walls);
             start = false;
         }
 
         if (balls.allowStart) {
-            startTheGame(walls);
+            // startTheGame(walls);
+            balls.setMass(10);
+            showWinnings()
+            // run(rotor, walls);
             start = true;
             allowCompleteEndFunction = true;
             balls.allowStart = false;

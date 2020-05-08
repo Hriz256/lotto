@@ -1,5 +1,3 @@
-import * as BABYLON from 'babylonjs';
-
 const random = (min, max) => Math.floor( min + Math.random() * (max + 1 - min));
 
 const materials = {
@@ -71,11 +69,13 @@ const mesh = {
         return box;
     },
 
-    setPhysics({impostor = 'SphereImpostor', mass = 0, restitution = 0, friction = 0.7}) {
+    setPhysics({impostor = 'SphereImpostor', mass = 0, restitution = 0, friction = 0.7, group, mask}) {
         this.physicsImpostor = new BABYLON.PhysicsImpostor(this, BABYLON.PhysicsImpostor[impostor], {
             mass,
             friction,
-            restitution
+            restitution,
+            group, // Сталкиваться будут те объекты, что имеют одинаковые маску и группу
+            mask
         }, this.scene);
     },
 

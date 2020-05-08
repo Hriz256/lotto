@@ -1,5 +1,4 @@
 import {materials, mesh, random} from "./materials";
-import * as BABYLON from "babylonjs";
 
 const balls = {
     winBallsInPipe: [],
@@ -11,7 +10,7 @@ const balls = {
         Array.from(this[`${this.currentIndex}`], item => item.physicsImpostor.setMass(mass));
     },
 
-    getBallPosY() {
+    isAllBallsFell() {
         return this[`${this.currentIndex}`].every(i => i.position.y < 0);
     },
 
@@ -42,8 +41,9 @@ const balls = {
 const createBalls = () => {
     const ballsX = [-1.5, -0.5, 0.5, 1.5];
 
-    Array.from({length: 4}, (i, ballIndex) => {
-        const spheresArray = Array.from({length: 10}, (item, index) => {
+    Array.from({length: ballsX.length}, (i, ballIndex) => {
+
+        balls[`${ballIndex}`] = Array.from({length: 10}, (item, index) => {
             const mat = materials.createTexture({texture: `${index}`, format: 'png'});
             mat.diffuseTexture.uOffset = random(1, 9) / 10;
             mat.diffuseTexture.vOffset = random(1, 9) / 10;
@@ -54,12 +54,11 @@ const createBalls = () => {
                 material: mat
             });
 
-            sphere.setPhysics({mass: 0, friction: 1, restitution: 0.8});
+            sphere.setPhysics({mass: 0, friction: 1, restitution: 0.8, group: 2, mask: 2});
 
             return sphere;
         });
 
-        balls[`${ballIndex ? ballIndex : balls.currentIndex}`] = [...spheresArray];
     });
 };
 
@@ -90,11 +89,11 @@ const showWinnings = () => {
 
     const newWinBall = mesh.createSphere({
         diameter: 0.7,
-        position: {x: 0, y: -8, z: 17},
+        position: {x: 0, y: -5.7, z: 16.5},
         material: materials.createTexture({texture: `${number}`, format: 'png'})
     });
 
-    newWinBall.setPhysics({mass: 0, friction: 0, restitution: 0.4});
+    newWinBall.setPhysics({mass: 2, friction: 0, restitution: 0.4, group: 1, mask: 1});
     balls.winBallsInPipe.push(newWinBall);
 
     balls.clearBallsArray();
