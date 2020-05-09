@@ -8,22 +8,25 @@ const timeout = (ms) => {
 };
 
 const createRotor = rotor => {
-    rotor[0].rotation.y = Math.PI;
-    rotor[0].scaling.set(0.137, 0.137, 0.137);
-    rotor[0].position.set(-3, -10.8, 18);
     rotor[0].previousRotorSpeed = rotor[0].speed = 0;
-
     rotor[0].setPhysics = mesh.setPhysics;
-    rotor[0].setPhysics({impostor: 'MeshImpostor', mass: 0, friction: 0, group: 2, mask: 2});
 
     return {
         async rotate(forceFactor) {
+            this.setPhysics(true);
+
             while (+rotor[0].speed.toFixed(2) !== +forceFactor.toFixed(2)) {
-                rotor[0].speed += rotor.previousRotorSpeed ? rotor[0].previousRotorSpeed / -10 : forceFactor / 10;
+                rotor[0].speed += rotor[0].previousRotorSpeed ? rotor[0].previousRotorSpeed / -10 : forceFactor / 10;
                 await timeout(300);
             }
 
             rotor[0].previousRotorSpeed = forceFactor;
+        },
+
+        setPhysics(allow) {
+            allow ?
+                rotor[0].setPhysics({impostor: 'MeshImpostor', mass: 0, friction: 0, group: 2, mask: 2}) :
+                rotor[0].physicsImpostor.dispose();
         },
 
         getHolder() {
@@ -134,20 +137,15 @@ const createRoller = (scene) => {
             item.rotation.y = Math.PI;
             item.scaling.set(0.137, 0.137, 0.137);
             item.position.set(-3, -10.8, 18);
-        });
 
-        Array.from([
-            'Volum_Base_Glass_Mesh',
-            'Import_glass001_Mesh.029',
-            'Import_glass002_Mesh.040',
-            'Import_glass003_Mesh.051',
-            'Import_glass_Mesh.007',
-            'export_Glass_Mesh.018'
-        ], item => scene.getMeshByName(item).material = materials.glass);
-
-        scene.getMeshByName('Body_Mesh.002').material = materials.createTexture({
-            texture: 'roller/Body_Base_Color',
-            format: 'png'
+            if (item.material.name.toLowerCase().includes('glass')) {
+                item.material = materials.glass
+            } else if (item.material.name.toLowerCase().includes('body')) {
+                item.material = materials.createTexture({
+                    texture: 'roller/Body_Base_Color',
+                    format: 'png'
+                });
+            }
         });
     };
 
@@ -156,7 +154,7 @@ const createRoller = (scene) => {
             Array.from(loadedMeshes, item => {
                 item.rotation.y = Math.PI;
                 item.scaling.set(0.137, 0.137, 0.137);
-                item.position.set(-3, -10.8, 18);
+                item.position.set(-0.25, -0.65, 16.7);
             });
 
             resolve(loadedMeshes);
@@ -185,13 +183,15 @@ const run = async (rotor, walls) => {
 };
 
 const endTheGame = async (rotor, walls) => {
+    rotor.setPhysics(false);
     await rotor.rotate(0);
+
     walls.toggleSpheresPhysic(false);
     await timeout(2000);
 
     balls.currentIndex++;
 
-    if (balls.currentIndex === balls.quantity - 1) {
+    if (balls.currentIndex === balls.quantity) {
         document.getElementById('start').textContent = 'Старт';
         createBalls();
     } else {
@@ -237,6 +237,7 @@ const createRoom = async (scene) => {
         }
 
         if (!balls[`${balls.currentIndex}`].length && allowCompleteEndFunction) {
+            console.log(1)
             endTheGame(rotor, walls);
             start = true;
             allowCompleteEndFunction = false;
