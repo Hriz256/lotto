@@ -41,15 +41,17 @@ const createRotor = () => {
 
             const stopRotor = () => {
                 if (forceFactor) {
-                    console.log(speed, '+')
                     speed++
                 } else {
-                    if (speed > 5) {
-                        console.log(speed, '+-')
-                        speed--;
-                    } else {
-                        speed *= 1 - rotorOne.rotationQuaternion.z;
-                    }
+                    // if (speed > 3) {
+                    speed--;
+                    // } else {
+                    //     speed -= speed * (1 - Math.abs(rotorOne.rotationQuaternion.w));
+                    //     console.log(rotorOne.rotationQuaternion.w)
+                    //     // if (speed < 1) {
+                    //     //
+                    //     // }
+                    // }
                 }
 
                 joint1.setMotor(speed);
@@ -119,16 +121,16 @@ const createRollerWalls = () => {
         return wall;
     });
 
-    const spheresWall = Array.from({length: 125}, () => {
+    const spheresWall = Array.from({length: 65}, () => {
         const sphere = mesh.createSphere({
             diameter: 2.5,
-            position: {x: -0.22 + (6.45 * Math.cos(alpha)), y: -0.6 + (6.45 * Math.sin(alpha)), z: 16.3},
+            position: {x: -0.22 + (6.48 * Math.cos(alpha)), y: -0.6 + (6.48 * Math.sin(alpha)), z: 16.3},
             material: materials['yellow'],
         });
 
-        sphere.setPhysics({restitution: 1, friction: 0, group: 2, mask: 2});
+        sphere.setPhysics({restitution: 0.5, friction: 0.5, group: 2, mask: 2});
         sphere.isVisible = false;
-        alpha += 0.05;
+        alpha += 0.1;
 
         return sphere;
     });
@@ -146,10 +148,10 @@ const createRollerWalls = () => {
 
         toggleSpheresPhysic(physic) {
             Array.from(spheresWall, (item, index) => {
-                if (index > 104) {
+                if (index > 52) {
                     physic ? item.setPhysics({
-                        restitution: 1,
-                        friction: 0,
+                        restitution: 0.5,
+                        friction: 0.5,
                         group: 2,
                         mask: 2
                     }) : item.physicsImpostor.dispose();
@@ -170,7 +172,7 @@ const createRoller = (scene, rotor) => {
 
             if (index === 3) {
                 item.scaling = new BABYLON.Vector3(0.139, 0.139, 0.139);
-                item.position = new BABYLON.Vector3(-2.8, -10.3, 1.25);
+                item.position = new BABYLON.Vector3(-2.79, -10.29, 1.25);
 
                 // следующи 2 строки нужны для того, чтобы сохранить изменения позиции
 
@@ -178,7 +180,7 @@ const createRoller = (scene, rotor) => {
                 item.bakeCurrentTransformIntoVertices(true);
 
                 item.setPhysics = mesh.setPhysics;
-                item.setPhysics({impostor: 'MeshImpostor', mass: 20, friction: 0, group: 2, mask: 2});
+                item.setPhysics({impostor: 'MeshImpostor', mass: 50, friction: 0, group: 2, mask: 2});
 
                 rotor.holderAddJoint(item);
             } else {
@@ -210,33 +212,33 @@ const allowPlay = () => {
     document.getElementById('start').textContent = balls.allowStart ? 'Стоп' : 'Старт';
 };
 
-const endTheGame = async (rotor, walls) => {
-    await rotor.runRotor(0);
-    walls.toggleSpheresPhysic(false);
-    await timeout(5000);
-
-    balls.currentIndex++;
-
-    if (balls.currentIndex === 4) {
-        document.getElementById('start').textContent = 'Старт';
-        createBalls();
-    }
+const startTheGame = (walls) => {
+    walls.setWallPhysics();
+    balls.setMass(10);
 };
 
 const run = async (rotor, walls) => {
     walls.toggleSpheresPhysic(true); // Включаем физику у окружающих сфер
 
-    // await timeout(2000);
+    await timeout(2000);
     await rotor.runRotor(10);
-
-    await endTheGame(rotor, walls);
 
     showWinnings()
 };
 
-const startTheGame = (walls) => {
-    walls.setWallPhysics();
-    balls.setMass(10);
+const endTheGame = async (rotor, walls) => {
+    await rotor.runRotor(0);
+    walls.toggleSpheresPhysic(false);
+    await timeout(2000);
+
+    balls.currentIndex++;
+
+    if (balls.currentIndex === balls.quantity) {
+        document.getElementById('start').textContent = 'Старт';
+        createBalls();
+    } else {
+        balls.allowStart = true;
+    }
 };
 
 const createRoom = (scene) => {
@@ -271,10 +273,7 @@ const createRoom = (scene) => {
         }
 
         if (balls.allowStart) {
-            // startTheGame(walls);
-            balls.setMass(10);
-            showWinnings()
-            // run(rotor, walls);
+            startTheGame(walls);
             start = true;
             allowCompleteEndFunction = true;
             balls.allowStart = false;
@@ -282,6 +281,7 @@ const createRoom = (scene) => {
 
         if (!balls[`${balls.currentIndex}`].length && allowCompleteEndFunction) {
             endTheGame(rotor, walls);
+            start = true;
             allowCompleteEndFunction = false;
         }
     });
