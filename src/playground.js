@@ -37,7 +37,7 @@ const createRotor = () => {
         async runRotor(forceFactor) {
             let speed = previousRotorSpeed;
             previousRotorSpeed = forceFactor;
-            rotorOne.physicsImpostor.wakeUp();
+            // rotorOne.physicsImpostor.wakeUp();
 
             const stopRotor = () => {
                 if (forceFactor) {
@@ -233,7 +233,7 @@ const endTheGame = async (rotor, walls) => {
 
     balls.currentIndex++;
 
-    if (balls.currentIndex === balls.quantity) {
+    if (balls.currentIndex === balls.quantity - 1) {
         document.getElementById('start').textContent = 'Старт';
         createBalls();
     } else {
