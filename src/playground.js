@@ -129,7 +129,7 @@ const createRollerWalls = () => {
 
 const createRoller = (scene) => {
     const assetsManager = new BABYLON.AssetsManager(scene);
-    const meshTask = assetsManager.addMeshTask('Roller', "", 'assets/roller/', 'roller.obj');
+    const meshTask = assetsManager.addMeshTask('Roller', "", 'assets/roller/', 'rotor2.obj');
 
     assetsManager.load();
 
