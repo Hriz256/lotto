@@ -8,31 +8,26 @@ const timeout = (ms) => {
 };
 
 const createRotor = rotor => {
-    rotor.position.set(-3, -10.7, 18);
-    rotor.computeWorldMatrix();
-    rotor.bakeCurrentTransformIntoVertices(true);
+    rotor[0].rotation.y = Math.PI;
+    rotor[0].scaling.set(0.137, 0.137, 0.137);
+    rotor[0].position.set(-3, -10.8, 18);
+    rotor[0].previousRotorSpeed = rotor[0].speed = 0;
 
-    rotor.previousRotorSpeed = rotor.speed = 0;
-
-
-
-    rotor.setPhysics = mesh.setPhysics;
-    rotor.setPhysics({ impostor: 'MeshImpostor', mass: 0, friction: 0, group: 2, mask: 2 });
-
-    // rotor.position.set(-2.75, -10.15, 1.25);
+    rotor[0].setPhysics = mesh.setPhysics;
+    rotor[0].setPhysics({impostor: 'MeshImpostor', mass: 0, friction: 0, group: 2, mask: 2});
 
     return {
         async rotate(forceFactor) {
-            while (+rotor.speed.toFixed(2) !== +forceFactor.toFixed(2)) {
-                rotor.speed += rotor.previousRotorSpeed ? rotor.previousRotorSpeed / -10 : forceFactor / 10;
+            while (+rotor[0].speed.toFixed(2) !== +forceFactor.toFixed(2)) {
+                rotor[0].speed += rotor.previousRotorSpeed ? rotor[0].previousRotorSpeed / -10 : forceFactor / 10;
                 await timeout(300);
             }
 
-            rotor.previousRotorSpeed = forceFactor;
+            rotor[0].previousRotorSpeed = forceFactor;
         },
 
         getHolder() {
-            return rotor;
+            return rotor[0];
         }
     }
 };
@@ -129,33 +124,42 @@ const createRollerWalls = () => {
 
 const createRoller = (scene) => {
     const assetsManager = new BABYLON.AssetsManager(scene);
-    const meshTask = assetsManager.addMeshTask('Roller', "", 'assets/roller/', 'rotor2.obj');
+    const rollerTask = assetsManager.addMeshTask('Roller', "", 'assets/roller/', 'roller.obj');
+    const rotorTask = assetsManager.addMeshTask('Rotor', "", 'assets/roller/', 'rotor.obj');
 
     assetsManager.load();
 
+    rollerTask.onSuccess = ({loadedMeshes}) => {
+        Array.from(loadedMeshes, item => {
+            item.rotation.y = Math.PI;
+            item.scaling.set(0.137, 0.137, 0.137);
+            item.position.set(-3, -10.8, 18);
+        });
+
+        Array.from([
+            'Volum_Base_Glass_Mesh',
+            'Import_glass001_Mesh.029',
+            'Import_glass002_Mesh.040',
+            'Import_glass003_Mesh.051',
+            'Import_glass_Mesh.007',
+            'export_Glass_Mesh.018'
+        ], item => scene.getMeshByName(item).material = materials.glass);
+
+        scene.getMeshByName('Body_Mesh.002').material = materials.createTexture({
+            texture: 'roller/Body_Base_Color',
+            format: 'png'
+        });
+    };
+
     return new Promise(resolve => {
-        meshTask.onSuccess = ({loadedMeshes}) => {
+        rotorTask.onSuccess = ({loadedMeshes}) => {
             Array.from(loadedMeshes, item => {
                 item.rotation.y = Math.PI;
-                item.scaling = new BABYLON.Vector3(0.137, 0.137, 0.137);
-                item.position = new BABYLON.Vector3(-3, -10.8, 18);
+                item.scaling.set(0.137, 0.137, 0.137);
+                item.position.set(-3, -10.8, 18);
             });
 
-            Array.from([
-                'Volum_Base_Glass_Mesh',
-                'Import_glass001_Mesh.029',
-                'Import_glass002_Mesh.040',
-                'Import_glass003_Mesh.051',
-                'Import_glass_Mesh.007',
-                'export_Glass_Mesh.018'
-            ], item => scene.getMeshByName(item).material = materials.glass);
-
-            scene.getMeshByName('Body_Mesh.002').material = materials.createTexture({
-                texture: 'roller/Body_Base_Color',
-                format: 'png'
-            });
-
-            resolve(loadedMeshes[3]);
+            resolve(loadedMeshes);
         };
     })
 };

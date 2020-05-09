@@ -1,7 +1,7 @@
 # Blender MTL File: 'None'
 # Material Count: 3
 
-newmtl Body
+newmtl Body.005
 Ns 18.000005
 Ka 1.000000 1.000000 1.000000
 Kd 1.000000 1.000000 1.000000
@@ -11,7 +11,7 @@ Ni 1.450000
 d 1.000000
 illum 1
 
-newmtl chrome
+newmtl chrome.005
 Ns 18.000005
 Ka 1.000000 1.000000 1.000000
 Kd 1.000000 1.000000 1.000000
@@ -21,7 +21,7 @@ Ni 1.450000
 d 1.000000
 illum 1
 
-newmtl glass1
+newmtl glass1.005
 Ns 18.000005
 Ka 1.000000 1.000000 1.000000
 Kd 1.000000 1.000000 1.000000
