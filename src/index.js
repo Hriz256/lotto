@@ -16,7 +16,10 @@ const createScene = () => {
     const camera = new BABYLON.ArcRotateCamera("Camera", Math.PI / -2, Math.PI / 2, 30, new BABYLON.Vector3(0, 0, 15), scene);
     camera.attachControl(canvas, true);
 
-    scene.enablePhysics(new BABYLON.Vector3(0, -40, 0), new BABYLON.AmmoJSPlugin(true));
+    const ammo = new BABYLON.AmmoJSPlugin(true);
+    ammo.setMaxSteps(10);
+    ammo.setFixedTimeStep(1 / 60);
+    scene.enablePhysics(new BABYLON.Vector3(0, -40, 0), ammo);
 
     mesh.scene = scene;
     materials.scene = scene;

@@ -13,10 +13,9 @@ const createRotor = rotor => {
 
     return {
         async rotate(forceFactor) {
-            this.setPhysics(true);
-
             while (+rotor[0].speed.toFixed(2) !== +forceFactor.toFixed(2)) {
                 rotor[0].speed += rotor[0].previousRotorSpeed ? rotor[0].previousRotorSpeed / -10 : forceFactor / 10;
+                console.log(+rotor[0].speed.toFixed(2), 'speed' )
                 await timeout(300);
             }
 
@@ -24,6 +23,7 @@ const createRotor = rotor => {
         },
 
         setPhysics(allow) {
+            console.log(allow)
             allow ?
                 rotor[0].setPhysics({impostor: 'MeshImpostor', mass: 0, friction: 0, group: 2, mask: 2}) :
                 rotor[0].physicsImpostor.dispose();
@@ -114,7 +114,7 @@ const createRollerWalls = () => {
             Array.from(spheresWall, (item, index) => {
                 if (index > 52) {
                     physic ? item.setPhysics({
-                        restitution: 0.5,
+                        restitution: 0.8,
                         friction: 0.5,
                         group: 2,
                         mask: 2
@@ -164,6 +164,7 @@ const createRoller = (scene) => {
 
 const allowPlay = () => {
     balls.allowStart = !balls.allowStart;
+    balls.currentIndex = 0;
 
     document.getElementById('start').textContent = balls.allowStart ? 'Стоп' : 'Старт';
 };
@@ -177,14 +178,15 @@ const run = async (rotor, walls) => {
     walls.toggleSpheresPhysic(true); // Включаем физику у окружающих сфер
 
     await timeout(2000);
-    await rotor.rotate(0.2);
+    rotor.setPhysics(true);
+    await rotor.rotate(0.1);
 
-    showWinnings()
+    // showWinnings()
 };
 
 const endTheGame = async (rotor, walls) => {
-    rotor.setPhysics(false);
     await rotor.rotate(0);
+    rotor.setPhysics(false); // выключаем физику, чтоб мячи проходили сквозь него
 
     walls.toggleSpheresPhysic(false);
     await timeout(2000);
@@ -222,7 +224,7 @@ const createRoom = async (scene) => {
     });
 
     scene.registerBeforeRender(() => {
-        const bool = balls.isAllBallsFell(); // если все шары упали
+        const bool = balls.currentIndex !== balls.quantity && balls.isAllBallsFell(); // если все шары упали
 
         if (bool && start) {
             run(rotor, walls);
@@ -237,7 +239,6 @@ const createRoom = async (scene) => {
         }
 
         if (!balls[`${balls.currentIndex}`].length && allowCompleteEndFunction) {
-            console.log(1)
             endTheGame(rotor, walls);
             start = true;
             allowCompleteEndFunction = false;
@@ -247,6 +248,6 @@ const createRoom = async (scene) => {
     });
 };
 
-document.getElementById('start').addEventListener('click', () => allowPlay());
+document.getElementById('start').addEventListener('click', allowPlay);
 
 export {createRoom};

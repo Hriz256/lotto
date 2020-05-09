@@ -49,11 +49,11 @@ const createBalls = () => {
 
             const sphere = mesh.createSphere({
                 diameter: 0.7,
-                position: {x: -1.5 + ballIndex, y: 5 + index * 0.7, z: 16.7},
+                position: {x: -1.5 + ballIndex, y: 5.15 + index * 0.7, z: 16.6},
                 material: mat
             });
 
-            sphere.setPhysics({mass: 0, friction: 1, restitution: 0.5, group: 2, mask: 2});
+            sphere.setPhysics({mass: 0, friction: 0.5, restitution: 0.8, group: 2, mask: 2});
 
             return sphere;
         });
