@@ -1,13 +1,63 @@
-import {materials, mesh} from "./materials";
-import {balls, createBalls, showWinnings} from "./balls";
+import {materials, mesh, draw, timeout} from "./materials";
+import {balls, showWinnings} from "./balls";
 
-const timeout = (ms) => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(), ms)
-    })
+const toggleStartBtn = show => {
+    const btn = document.getElementById('start');
+
+    btn.style.opacity = `${show ? 1 : 0.5}`;
+    show ? btn.removeAttribute('disabled') : btn.setAttribute('disabled', 'disabled');
 };
 
-const createRotor = rotor => {
+const drawWinBalls = () => {
+    const drawFunc = draw();
+    let offsetX = 0;
+    let offsetY = 0;
+
+    return {
+        async draw(winNumbers) {
+            const leftAnimText = drawFunc.drawText({
+                text: winNumbers,
+                left: `${100 - offsetX * 250}px`,
+                top: `${456 - offsetY * 65}px`,
+                direction: 'left'
+            });
+
+            const rightAnimText = drawFunc.drawText({
+                text: winNumbers,
+                left: `${-115 + offsetX * 250}px`,
+                top: `${456 - offsetY * 65}px`,
+                direction: 'right'
+            });
+
+            this.changeOffset();
+
+            return Promise.all([leftAnimText, rightAnimText]);
+        },
+
+        changeOffset() {
+            offsetY++;
+
+            if (balls.restartsCount === 4 || balls.restartsCount === 14) {
+                offsetY++;
+            } else if (balls.restartsCount === 9) {
+                offsetX++;
+                offsetY = 0;
+            }
+
+            balls.restartsCount++;
+        }
+    };
+};
+
+const createRotor = rotorInstance => {
+    const rotor = rotorInstance.loadedMeshes;
+
+    Array.from(rotor, item => {
+        item.rotation.y = Math.PI;
+        item.scaling.set(0.137, 0.137, 0.137);
+        item.position.set(-0.25, -0.65, 16.7);
+    });
+
     rotor[0].previousRotorSpeed = rotor[0].speed = 0;
     rotor[0].setPhysics = mesh.setPhysics;
 
@@ -15,7 +65,7 @@ const createRotor = rotor => {
         async rotate(forceFactor) {
             while (+rotor[0].speed.toFixed(2) !== +forceFactor.toFixed(2)) {
                 rotor[0].speed += rotor[0].previousRotorSpeed ? rotor[0].previousRotorSpeed / -10 : forceFactor / 10;
-                console.log(+rotor[0].speed.toFixed(2), 'speed' )
+                console.log(+rotor[0].speed.toFixed(2), 'speed');
                 await timeout(300);
             }
 
@@ -23,7 +73,6 @@ const createRotor = rotor => {
         },
 
         setPhysics(allow) {
-            console.log(allow)
             allow ?
                 rotor[0].setPhysics({impostor: 'MeshImpostor', mass: 0, friction: 0, group: 2, mask: 2}) :
                 rotor[0].physicsImpostor.dispose();
@@ -76,7 +125,7 @@ const createRollerWalls = () => {
     const walls = Array.from([9.8, 23.4], z => {
         const wall = mesh.createBox({
             size: {x: 12, y: 12, z: 12},
-            position: {x: 0, y: -1, z},
+            position: {x: 0, y: 0, z},
             material: materials['yellow']
         });
 
@@ -84,6 +133,21 @@ const createRollerWalls = () => {
 
         return wall;
     });
+
+    // const spheresWall = Array.from({length: 18}, () => {
+    //     const box = mesh.createBox({
+    //         size: {x: 4, y: 10, z: 3},
+    //         position: {x: -0.22 + (6.5 * Math.cos(alpha)), y: -0.5 + (6.5 * Math.sin(alpha)), z: 16},
+    //         material: materials['yellow'],
+    //     });
+    //
+    //     box.lookAt(new BABYLON.Vector3(-0.22, -0.5, 16));
+    //     box.isVisible = false;
+    //     box.setPhysics({restitution: 0.3, friction: 0.5, group: 2, mask: 2});
+    //     alpha += 0.35;
+    //
+    //     return box;
+    // });
 
     const spheresWall = Array.from({length: 65}, () => {
         const sphere = mesh.createSphere({
@@ -125,48 +189,21 @@ const createRollerWalls = () => {
     }
 };
 
-const createRoller = (scene) => {
-    const assetsManager = new BABYLON.AssetsManager(scene);
-    const rollerTask = assetsManager.addMeshTask('Roller', "", 'assets/roller/', 'roller.obj');
-    const rotorTask = assetsManager.addMeshTask('Rotor', "", 'assets/roller/', 'rotor.obj');
+const createRoller = (scene, roller) => {
+    Array.from(roller.loadedMeshes, item => {
+        item.rotation.y = Math.PI;
+        item.scaling.set(0.137, 0.137, 0.137);
+        item.position.set(-3, -10.8, 18);
 
-    assetsManager.load();
-
-    rollerTask.onSuccess = ({loadedMeshes}) => {
-        Array.from(loadedMeshes, item => {
-            item.rotation.y = Math.PI;
-            item.scaling.set(0.137, 0.137, 0.137);
-            item.position.set(-3, -10.8, 18);
-
-            if (item.material.name.toLowerCase().includes('glass')) {
-                item.material = materials.glass
-            } else if (item.material.name.toLowerCase().includes('body')) {
-                item.material = materials.createTexture({
-                    texture: 'roller/Body_Base_Color',
-                    format: 'png'
-                });
-            }
-        });
-    };
-
-    return new Promise(resolve => {
-        rotorTask.onSuccess = ({loadedMeshes}) => {
-            Array.from(loadedMeshes, item => {
-                item.rotation.y = Math.PI;
-                item.scaling.set(0.137, 0.137, 0.137);
-                item.position.set(-0.25, -0.65, 16.7);
+        if (item.material.name.toLowerCase().includes('glass')) {
+            item.material = materials.glass
+        } else if (item.material.name.toLowerCase().includes('body')) {
+            item.material = materials.createTexture({
+                texture: 'roller/Body_Base_Color',
+                format: 'png'
             });
-
-            resolve(loadedMeshes);
-        };
-    })
-};
-
-const allowPlay = () => {
-    balls.allowStart = !balls.allowStart;
-    balls.currentIndex = 0;
-
-    document.getElementById('start').textContent = balls.allowStart ? 'Стоп' : 'Старт';
+        }
+    });
 };
 
 const startTheGame = (walls) => {
@@ -179,42 +216,43 @@ const run = async (rotor, walls) => {
 
     await timeout(2000);
     rotor.setPhysics(true);
-    await rotor.rotate(0.1);
+    await rotor.rotate(0.14);
 
-    // showWinnings()
+    setTimeout(showWinnings, 10000);
 };
 
-const endTheGame = async (rotor, walls) => {
+const endTheGame = async (rotor, walls, draw, sphereInstance) => {
     await rotor.rotate(0);
     rotor.setPhysics(false); // выключаем физику, чтоб мячи проходили сквозь него
 
     walls.toggleSpheresPhysic(false);
     await timeout(2000);
 
-    balls.currentIndex++;
+    if (++balls.currentIndex === balls.quantity) {
+        const winNumbers = balls.winBallsInPipe.reduce((acc, item) => acc + `${item.material.name} `, '');
 
-    if (balls.currentIndex === balls.quantity) {
-        document.getElementById('start').textContent = 'Старт';
-        createBalls();
+        balls.restart();
+        await draw.draw(winNumbers);
+        await timeout(1000);
+        await balls.createBalls(sphereInstance, 200);
+
+        toggleStartBtn(true);
     } else {
         balls.allowStart = true;
     }
 };
 
-const createRoom = async (scene) => {
+const createRoom = async (scene, tasks) => {
     let start = false;
     let allowCompleteEndFunction = false;
 
-    const roller = await createRoller(scene);
-    const rotor = createRotor(roller);
-
-    createBalls();
+    createBallCollector(); // стены вокруг трубы, в которую падают выигрышные шарики
+    createRoller(scene, tasks[0]);
+    const rotor = createRotor(tasks[1]);
 
     const walls = createRollerWalls();
     // После создания стены из сфер делаем некоторые из них "нефизичными", чтобы они не мешали падению шариков
     walls.toggleSpheresPhysic(false);
-
-    createBallCollector(); // стены вокруг трубы, в которую падают выигрышные шарики
 
     const bg = mesh.createPlane({
         width: 85,
@@ -222,6 +260,10 @@ const createRoom = async (scene) => {
         position: {x: 0, y: 0, z: 20},
         material: materials.createTexture({texture: 'Stage', format: 'png'})
     });
+
+    const draw = drawWinBalls();
+
+    await balls.createBalls(tasks[2], 0);
 
     scene.registerBeforeRender(() => {
         const bool = balls.currentIndex !== balls.quantity && balls.isAllBallsFell(); // если все шары упали
@@ -238,8 +280,12 @@ const createRoom = async (scene) => {
             balls.allowStart = false;
         }
 
-        if (!balls[`${balls.currentIndex}`].length && allowCompleteEndFunction) {
-            endTheGame(rotor, walls);
+        // const isTrue = balls[`${balls.currentIndex}`].some(i => i.position.y < -10);
+
+        // isTrue && alert(isTrue);
+
+        if (balls[`${balls.currentIndex}`] && !balls[`${balls.currentIndex}`].length && allowCompleteEndFunction) {
+            endTheGame(rotor, walls, draw, tasks[2]);
             start = true;
             allowCompleteEndFunction = false;
         }
@@ -248,6 +294,10 @@ const createRoom = async (scene) => {
     });
 };
 
-document.getElementById('start').addEventListener('click', allowPlay);
+document.getElementById('start').addEventListener('click', e => {
+    balls.allowStart = !balls.allowStart;
+
+    toggleStartBtn(false);
+});
 
 export {createRoom};

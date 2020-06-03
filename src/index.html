@@ -6,6 +6,7 @@
     <script src="./scripts/babylon.js"></script>
     <script src="./scripts/babylonjs.loaders.js"></script>
     <script src="./scripts/ammo.js"></script>
+    <script src="./scripts/babylon.gui.min.js"></script>
     <style>
         html, body {
             overflow: hidden;
@@ -35,22 +36,20 @@
 
         #start {
             position: absolute;
-            line-height: 30px;
-            vertical-align: middle;
-            text-align: center;
             font-size: 16px;
             top: 15px;
             left: 15px;
             width: 80px;
-            height: 30px;
+            padding: 8px 0;
             color: white;
+            border: none;
             background: #5e7d00;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
-<span id="start">Старт</span>
+<button id="start">Старт</button>
 <div id="fps"></div>
 <canvas id="renderCanvas"></canvas>
 </body>

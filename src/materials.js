@@ -1,4 +1,15 @@
-const random = (min, max) => Math.floor( min + Math.random() * (max + 1 - min));
+const random = (min, max) => Math.floor(min + Math.random() * (max + 1 - min));
+
+const colors = {
+    'black': '#000',
+    'yellow': '#ffed45'
+};
+
+const timeout = (ms) => {
+    return new Promise(resolve => {
+        setTimeout(() => resolve(), ms)
+    })
+};
 
 const materials = {
     scene: null,
@@ -28,16 +39,9 @@ const materials = {
         this.glass.reflectivityColor = new BABYLON.Color3(0.003, 0.003, 0.003);
     },
 
-    createText({width, height}) {
-        const textGround = new BABYLON.DynamicTexture("textSurface", {width, height}, this.scene);
-        textGround.hasAlpha = true;
-        textGround.maxSimultaneousLights = 16;
-
-        const matGround = new BABYLON.StandardMaterial("Mat", this.scene);
-        matGround.diffuseTexture = textGround;
-        matGround.maxSimultaneousLights = 16;
-
-        return {textGround, matGround};
+    setColors() {
+        Array.from(Object.entries(colors), item => this.createColor(item[0], item[1]));
+        this.createGlass();
     }
 };
 
@@ -87,35 +91,56 @@ const mesh = {
     },
 };
 
-const drawText = ({x, y, z, text, size, multiplier = 3, height, inCenterX = false, inCenterZ = false, style = 'normal'}) => {
-    const DTHeight = multiplier * size;
-    const ratio = height / DTHeight;
-    const initText = materials.createText({width: 64, height: 64});
-    const tmpctx = initText.textGround.getContext();
-    tmpctx.font = `${style} ${size}px Arial`;
-    const DTWidth = tmpctx.measureText(text).width + 8;
-    const planeWidth = DTWidth * ratio;
+const draw = () => {
+    const addTextToThePlane = async (plane, textNode, resolve) => {
+        for (let count = 0; count < 3; count++) {
+            plane.addControl(textNode);
+            await timeout(300);
 
-    const text2 = materials.createText({width: DTWidth, height: DTHeight});
-    text2.textGround.drawText(text, 0, null, `${style} ${size}px Arial`, "#fff", null, true);
+            plane.removeControl(textNode);
+            await timeout(300);
+        }
 
-    mesh.createPlane({
-        width: planeWidth,
-        height,
-        position: {
-            x: inCenterX ? x : x - planeWidth / 2,
-            y,
-            z: inCenterZ ? z : z + height / 2
-        },
-        rotation: {
-            x: Math.PI / 2,
-            y: Math.PI,
-            z: 0
-        },
-        material: text2.matGround
+        plane.addControl(textNode);
+        resolve()
+    };
+
+    const leftPlane = mesh.createPlane({
+        width: 30,
+        height: 30,
+        position: {x: -32, y: 0, z: 19.9}
     });
 
-    return text2.textGround;
+    const rightPlane = mesh.createPlane({
+        width: 30,
+        height: 30,
+        position: {x: 32, y: 0, z: 19.9}
+    });
+
+    const leftTextPlane = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(leftPlane);
+    const rightTextPlane = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(rightPlane);
+
+    return {
+        async drawText({text, left, top, direction}) {
+            const textNode = new BABYLON.GUI.TextBlock();
+
+            textNode.text = text;
+            textNode.color = '#000';
+            textNode.fontSize = '46px';
+            textNode.fontWeight = 'bold';
+            textNode.left = left;
+            textNode.top = top;
+
+            return new Promise(resolve => {
+                return addTextToThePlane(direction === 'left' ? leftTextPlane : rightTextPlane, textNode, resolve);
+            })
+        },
+
+        removeTextNodes() {
+            Array.from(leftTextPlane.getChildren()[0].children, textNode => leftTextPlane.removeControl(textNode));
+            Array.from(rightTextPlane.getChildren()[0].children, textNode => rightTextPlane.removeControl(textNode));
+        }
+    };
 };
 
-export {materials, mesh, drawText, random};
+export {materials, mesh, draw, random, timeout};

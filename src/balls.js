@@ -1,4 +1,4 @@
-import {materials, mesh, random} from "./materials";
+import {materials, mesh, random, timeout} from "./materials";
 
 const balls = {
     quantity: 4,
@@ -6,13 +6,19 @@ const balls = {
     winBallsImg: [],
     currentIndex: 0,
     allowStart: false,
+    restartsCount: 0,
+
+    '0': [],
+    '1': [],
+    '2': [],
+    '3': [],
 
     setMass(mass) {
         Array.from(this[`${this.currentIndex}`], item => item.physicsImpostor.setMass(mass));
     },
 
     isAllBallsFell() {
-        return this[`${this.currentIndex}`].every(i => i.position.y < 0) && this[`${this.currentIndex}`].length;
+        return this[`${this.currentIndex}`].every(i => i.position.y < -4) && this[`${this.currentIndex}`].length;
     },
 
     clearBallsArray() {
@@ -24,9 +30,8 @@ const balls = {
             }
 
             const ballIndex = this[`${this.currentIndex}`].findIndex(ball =>
-                ball.position.y < -4.5 &&
-                ball.position.x > -2 &&
-                ball.position.x < 2
+                (ball.position.y < -4.5 && ball.position.x > -1.2 && ball.position.x < 1.2) ||
+                (ball.position.x < -6 || ball.position.x > 6 || ball.position.y < -10)
             );
 
             ballIndex !== -1 && this.removeBall(ballIndex);
@@ -36,29 +41,40 @@ const balls = {
     removeBall(ballIndex) {
         this[`${this.currentIndex}`][ballIndex].dispose();
         this[`${this.currentIndex}`].splice(ballIndex, 1);
-    }
-};
+    },
 
-const createBalls = () => {
-    Array.from({length: balls.quantity}, (i, ballIndex) => {
+    createBalls(sphereInstance, delay) {
+        return new Promise(async (resolve) => {
+            for (let index = 0; index < 10; index++) {
 
-        balls[`${ballIndex}`] = Array.from({length: 10}, (item, index) => {
-            const mat = materials.createTexture({texture: `${index}`, format: 'png'});
-            mat.diffuseTexture.uOffset = random(1, 9) / 10;
-            mat.diffuseTexture.vOffset = random(1, 9) / 10;
+                Array.from({length: this.quantity}, (item, ballIndex) => {
+                    const sphere = sphereInstance.loadedMeshes[0].clone('sphere');
+                    sphere.rotation.set(Math.random(), Math.random(), Math.random());
+                    sphere.position.set(-1.5 + ballIndex, 5.15 + index * 0.7, 16.6);
+                    sphere.material = materials.createTexture({texture: `${index}`, format: 'png'});
+                    sphere.isVisible = true;
+                    sphere.setPhysics = mesh.setPhysics;
+                    sphere.setPhysics({mass: 0, friction: 0.5, restitution: 0.5, group: 2, mask: 2});
 
-            const sphere = mesh.createSphere({
-                diameter: 0.7,
-                position: {x: -1.5 + ballIndex, y: 5.15 + index * 0.7, z: 16.6},
-                material: mat
-            });
+                    this[`${ballIndex}`].push(sphere);
+                });
 
-            sphere.setPhysics({mass: 0, friction: 0.5, restitution: 0.8, group: 2, mask: 2});
+                await timeout(delay);
+            }
 
-            return sphere;
-        });
+            resolve();
+        })
+    },
 
-    });
+    restart() {
+        this.restartsCount++;
+
+        Array.from([...this.winBallsInPipe, ...this.winBallsImg], item => item.dispose());
+        this.winBallsInPipe.length = 0;
+        this.winBallsImg.length = 0;
+
+        balls.currentIndex = 0;
+    },
 };
 
 const showWinBall = (number) => {
@@ -82,20 +98,16 @@ const showWinBall = (number) => {
 const showWinnings = () => {
     const number = random(0, 9);
     const ballIndex = balls[`${balls.currentIndex}`].findIndex(item => item.material.name === `${number}`);
+    const ball = balls[`${balls.currentIndex}`][ballIndex];
 
     showWinBall(number);
-    balls.removeBall(ballIndex);
+    balls[`${balls.currentIndex}`].splice(ballIndex, 1);
 
-    const newWinBall = mesh.createSphere({
-        diameter: 0.7,
-        position: {x: 0, y: -5.7, z: 16.5},
-        material: materials.createTexture({texture: `${number}`, format: 'png'})
-    });
-
-    newWinBall.setPhysics({mass: 2, friction: 0, restitution: 0.4, group: 1, mask: 1});
-    balls.winBallsInPipe.push(newWinBall);
+    ball.position.set(0, -5.7, 16.5);
+    ball.setPhysics({mass: 2, friction: 0, restitution: 0, group: 1, mask: 1});
+    balls.winBallsInPipe.push(ball);
 
     balls.clearBallsArray();
 };
 
-export {balls, createBalls, showWinnings}
+export {balls, showWinnings}
