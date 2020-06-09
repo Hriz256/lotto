@@ -26,7 +26,7 @@ const createScene = () => {
     light.intensity = 1.25;
 
     const camera = new BABYLON.ArcRotateCamera("Camera", Math.PI / -2, Math.PI / 2, 30, new BABYLON.Vector3(0, 0, 0), scene);
-    camera.attachControl(canvas, true);
+    // camera.attachControl(canvas, true);
 
     const ammo = new BABYLON.AmmoJSPlugin(true);
     ammo.setMaxSteps(40);

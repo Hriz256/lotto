@@ -54,7 +54,7 @@ const balls = {
                     sphere.material = materials.createTexture({texture: `${index}`, format: 'png'});
                     sphere.isVisible = true;
                     sphere.setPhysics = mesh.setPhysics;
-                    sphere.setPhysics({mass: 0, friction: 0.5, restitution: 0.5, group: 2, mask: 2});
+                    sphere.setPhysics({mass: 0, friction: 1, restitution: 0.7, group: 2, mask: 2});
 
                     this[`${ballIndex}`].push(sphere);
                 });

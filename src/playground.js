@@ -54,8 +54,8 @@ const createRotor = rotorInstance => {
 
     Array.from(rotor, item => {
         item.rotation.y = Math.PI;
-        item.scaling.set(0.137, 0.137, 0.137);
-        item.position.set(-0.25, -0.65, 16.7);
+        item.scaling.set(0.139, 0.139, 0.139);
+        item.position.set(-0.25, -0.67, 16.7);
     });
 
     rotor[0].previousRotorSpeed = rotor[0].speed = 0;
@@ -120,9 +120,9 @@ const createBallCollector = () => {
 };
 
 const createRollerWalls = () => {
-    let alpha = 2.06;
+    let alpha = 1.85;
 
-    const walls = Array.from([9.8, 23.4], z => {
+    const walls = Array.from([8.5, 23.4], z => {
         const wall = mesh.createBox({
             size: {x: 12, y: 12, z: 12},
             position: {x: 0, y: 0, z},
@@ -132,6 +132,20 @@ const createRollerWalls = () => {
         wall.isVisible = false;
 
         return wall;
+    });
+
+    const spheresWall2 = Array.from({length: 65}, () => {
+        const sphere = mesh.createSphere({
+            diameter: 2.5,
+            position: {x: -0.23 + (5.5 * Math.cos(alpha)), y: -0.5 + (5.5 * Math.sin(alpha)), z: 14.5},
+            material: materials['yellow'],
+        });
+
+        sphere.setPhysics({restitution: 0.7, friction: 1, group: 2, mask: 2});
+        sphere.isVisible = false;
+        alpha += 0.1;
+
+        return sphere;
     });
 
     // const spheresWall = Array.from({length: 18}, () => {
@@ -152,11 +166,11 @@ const createRollerWalls = () => {
     const spheresWall = Array.from({length: 65}, () => {
         const sphere = mesh.createSphere({
             diameter: 2.5,
-            position: {x: -0.22 + (6.48 * Math.cos(alpha)), y: -0.6 + (6.48 * Math.sin(alpha)), z: 16.3},
+            position: {x: -0.23 + (6.48 * Math.cos(alpha)), y: -0.5 + (6.47 * Math.sin(alpha)), z: 16.3},
             material: materials['yellow'],
         });
 
-        sphere.setPhysics({restitution: 0.5, friction: 0.5, group: 2, mask: 2});
+        sphere.setPhysics({restitution: 0.7, friction: 1, group: 2, mask: 2});
         sphere.isVisible = false;
         alpha += 0.1;
 
@@ -178,8 +192,8 @@ const createRollerWalls = () => {
             Array.from(spheresWall, (item, index) => {
                 if (index > 52) {
                     physic ? item.setPhysics({
-                        restitution: 0.8,
-                        friction: 0.5,
+                        restitution: 0.7,
+                        friction: 1,
                         group: 2,
                         mask: 2
                     }) : item.physicsImpostor.dispose();
